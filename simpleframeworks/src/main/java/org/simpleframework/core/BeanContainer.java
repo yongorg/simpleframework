@@ -40,7 +40,7 @@ public class BeanContainer {
      * 获取bean容器实例
      * （枚举实现单例：防止反射、序列化攻击）
      *
-     * @return: org.simpleframework.org.simpleframework.core.BeanContainer
+     * @return: org.simpleframework.core.BeanContainer
      **/
     public static BeanContainer getInstance() {
         return ContainerHolder.HOLDER.instance;
@@ -49,7 +49,7 @@ public class BeanContainer {
     private enum ContainerHolder {
         HOLDER;
 
-        private BeanContainer instance;
+        private final BeanContainer instance;
 
         ContainerHolder() {
             instance = new BeanContainer();
@@ -61,22 +61,31 @@ public class BeanContainer {
     }
 
     /**
+     * Bean实例数量
+     *
+     * @return 数量
+     */
+    public int size() {
+        return beanMap.size();
+    }
+
+    /**
      * 扫描加载所有Bean
      *
-     * @author: yong.zheng
+     * @author yong.zheng
      * @date: 2022/5/2 19:06
      **/
-    public synchronized void loadBeans(String packgeName) {
+    public synchronized void loadBeans(String packageName) {
         if (isLoaded()) {
-            log.warn("BeanContainer has been leaded.");
+            log.warn("BeanContainer has been loaded.");
             return;
         }
 
         // 加载类
-        Optional.ofNullable(ClassUtil.extractPackageClass(packgeName))
+        Optional.ofNullable(ClassUtil.extractPackageClass(packageName))
                 .ifPresentOrElse(
                         classes -> classes.forEach(this::putBeanMap),
-                        () -> log.warn("extract nothing from packageName {}", packgeName)
+                        () -> log.warn("extract nothing from packageName {}", packageName)
                 );
 
         loaded = true;
@@ -115,8 +124,8 @@ public class BeanContainer {
     /**
      * 获取bean实例
      **/
-    public Object getBean(Class<?> clazz) {
-        return beanMap.get(clazz);
+    public <T> T getBean(Class<T> clazz) {
+        return (T) beanMap.get(clazz);
     }
 
     /**
@@ -136,6 +145,7 @@ public class BeanContainer {
 
     /**
      * 根据注解筛选class对象集合
+     *
      * @Param :annotationClass: 注解class对象
      * @return: java.util.Set<java.lang.Class < ?>>
      **/
@@ -143,6 +153,20 @@ public class BeanContainer {
         return getClasses()
                 .stream()
                 .filter(clazz -> clazz.isAnnotationPresent(annotationClass))
+                .collect(Collectors.toSet());
+    }
+
+
+    /**
+     * 根据父类或接口筛选class对象集合，不包括其本身
+     *
+     * @Param :annotationClass: 注解class对象
+     * @return: java.util.Set<java.lang.Class < ?>>
+     **/
+    public Set<Class<?>> getClassesBySuperClass(Class<?> interfaceOrSuperClass) {
+        return getClasses()
+                .stream()
+                .filter(clazz -> interfaceOrSuperClass.isAssignableFrom(clazz) && !clazz.equals(interfaceOrSuperClass))
                 .collect(Collectors.toSet());
     }
 }
