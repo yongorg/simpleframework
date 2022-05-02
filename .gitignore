@@ -1,0 +1,10 @@
+.gitlab-ci.yml
+Dockerfile
+*/target/
+/.settings/
+.classpath
+.project
+.idea
+
+
+
